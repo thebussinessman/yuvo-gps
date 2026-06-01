@@ -8,16 +8,16 @@ import { Position } from './position-buffer.service';
 })
 export class LiveGateway {
   @WebSocketServer()
-  server: Server;
+  server!: Server;
 
   emitLocation(pos: Position) {
     this.server.emit('location', {
-      imei:       pos.imei,
-      time:       pos.time,
-      lat:        pos.lat,
-      lon:        pos.lon,
-      speedKph:   pos.speedKph,
-      course:     pos.course,
+      imei: pos.imei,
+      time: pos.time,
+      lat: pos.lat,
+      lon: pos.lon,
+      speed_kph: pos.speedKph,
+      course: pos.course,
       satellites: pos.satellites,
     });
   }

@@ -9,10 +9,17 @@ export class PlaybackService {
   async getLatestAll() {
     const res = await this.db.query(`
       SELECT DISTINCT ON (imei)
-        imei, time, lat, lon, speed_kph, course, satellites
+        imei,
+        time,
+        lat::float AS lat,
+        lon::float AS lon,
+        speed_kph::float AS speed_kph,
+        course::float AS course,
+        satellites
       FROM positions
       ORDER BY imei, time DESC
     `);
+
     return res.rows;
   }
 
@@ -20,7 +27,14 @@ export class PlaybackService {
   async getLatestByImei(imei: string) {
     const res = await this.db.query(
       `
-      SELECT imei, time, lat, lon, speed_kph, course, satellites
+      SELECT
+        imei,
+        time,
+        lat::float AS lat,
+        lon::float AS lon,
+        speed_kph::float AS speed_kph,
+        course::float AS course,
+        satellites
       FROM positions
       WHERE imei = $1
       ORDER BY time DESC
@@ -28,14 +42,22 @@ export class PlaybackService {
       `,
       [imei],
     );
+
     return res.rows[0] ?? null;
   }
 
-  // Playback history
+  // Playback/history for one device
   async getPlayback(imei: string, from: string, to: string) {
     const res = await this.db.query(
       `
-      SELECT imei, time, lat, lon, speed_kph, course, satellites
+      SELECT
+        imei,
+        time,
+        lat::float AS lat,
+        lon::float AS lon,
+        speed_kph::float AS speed_kph,
+        course::float AS course,
+        satellites
       FROM positions
       WHERE imei = $1
         AND time BETWEEN $2 AND $3
@@ -43,6 +65,7 @@ export class PlaybackService {
       `,
       [imei, from, to],
     );
+
     return res.rows;
   }
 }

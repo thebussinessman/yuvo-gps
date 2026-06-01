@@ -1,4 +1,3 @@
-
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Pool, QueryResult } from 'pg';
 
@@ -7,17 +6,14 @@ export class DbService implements OnModuleDestroy {
   private pool: Pool;
 
   constructor() {
-    const password = process.env.DB_PASS;
-    if (typeof password !== 'string') {
-      throw new Error('DB_PASS is not set or not a string');
-    }
+    const password = process.env.DB_PASS ?? 'Notsniw@12';
 
     this.pool = new Pool({
-      host: process.env.DB_HOST,
+      host: process.env.DB_HOST ?? 'localhost',
       port: Number(process.env.DB_PORT ?? 5432),
-      user: process.env.DB_USER,
+      user: process.env.DB_USER ?? 'postgres',
       password,
-      database: process.env.DB_NAME,
+      database: process.env.DB_NAME ?? 'yuvo_gps',
       max: 10,
     });
   }
@@ -30,5 +26,4 @@ export class DbService implements OnModuleDestroy {
     await this.pool.end();
   }
 }
-
 

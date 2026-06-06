@@ -1,5 +1,5 @@
 DB_HOST=localhost
-DB_PORT=5332
+DB_PORT=5432
 DB_USER=postgres
 DB_PASS=Notsniw@12
 DB_NAME=yuvo_gps

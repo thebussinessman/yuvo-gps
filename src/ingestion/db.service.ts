@@ -1,34 +1,18 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { Pool } from 'pg';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Pool, QueryResult } from 'pg';
 
 @Injectable()
-export class DbService implements OnModuleInit, OnModuleDestroy {
+export class DbService implements OnModuleDestroy {
   private pool: Pool;
 
   constructor() {
-    const databaseUrl = process.env.DATABASE_URL;
-
-    if (!databaseUrl) {
-      throw new Error('DATABASE_URL is missing. Add it in Railway Variables.');
-    }
-
     this.pool = new Pool({
-      connectionString: databaseUrl,
+      connectionString: process.env.DATABASE_URL,
       max: 10,
     });
   }
 
-  async onModuleInit() {
-    try {
-      await this.pool.query('SELECT NOW()');
-      console.log('✅ Connected to PostgreSQL');
-    } catch (error) {
-      console.error('❌ Database connection failed:', error);
-      throw error;
-    }
-  }
-
-  async query(text: string, params?: any[]) {
+  query(text: string, params?: any[]): Promise<QueryResult> {
     return this.pool.query(text, params);
   }
 

@@ -17,7 +17,7 @@ type SocketState = {
 
 @Injectable()
 export class TcpGateway implements OnModuleInit, OnModuleDestroy {
-  private server: net.Server;
+  private server!: net.Server;
   private readonly sockets = new Map<net.Socket, SocketState>();
 
   constructor(

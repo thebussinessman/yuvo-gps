@@ -1,8 +1,7 @@
-
 // src/ingestion/gt06.ts
 // GT06 (a.k.a. Concox/GT06) basics: short frames start with 0x7878 and end with 0x0D0A.
-// CRC is CRC-16/IBM-SDLC style often referenced as "CRC-ITU" in GT06 docs:
-// poly 0x1021, init 0xFFFF, no xorout, msb-first.
+// CRC is CRC-16/X-25 (often called "CRC-ITU" in GT06 docs), which is the REFLECTED variant:
+// poly 0x8408 (bit-reverse of 0x1021), init 0xFFFF, final XOR 0xFFFF, lsb-first.
 
 export type Gt06Frame = {
   raw: Buffer;        // full frame: 0x7878 ... 0x0D0A
@@ -16,15 +15,16 @@ const START = Buffer.from([0x78, 0x78]);
 const STOP = Buffer.from([0x0d, 0x0a]);
 
 export function crc16_itu(buf: Buffer): number {
+  // CRC-16/X-25: reflected, poly 0x8408 (reverse of 0x1021), init 0xffff, final XOR 0xffff
   let crc = 0xffff;
   for (let i = 0; i < buf.length; i++) {
-    crc ^= (buf[i] << 8);
+    crc ^= buf[i];
     for (let b = 0; b < 8; b++) {
-      if (crc & 0x8000) crc = ((crc << 1) ^ 0x1021) & 0xffff;
-      else crc = (crc << 1) & 0xffff;
+      if (crc & 0x0001) crc = (crc >> 1) ^ 0x8408;
+      else crc = crc >> 1;
     }
   }
-  return crc & 0xffff;
+  return (~crc) & 0xffff;
 }
 
 /**
@@ -99,8 +99,8 @@ export function parseGt06ShortFrame(frame: Buffer): Gt06Frame | null {
   const crcOffset = serialOffset + 2;
   const crcRecv = data.readUInt16BE(crcOffset);
 
-  // CRC is calculated over: protocol + info + serial (i.e., data without length and without crc)
-  const crcInput = data.subarray(1, crcOffset); // from protocol to end of serial
+  // CRC is calculated over: length + protocol + info + serial (i.e., data without the crc itself)
+  const crcInput = data.subarray(0, crcOffset); // from length to end of serial
   const crcCalc = crc16_itu(crcInput);
 
   if (crcCalc !== crcRecv) {
@@ -136,7 +136,7 @@ export function decodeImeiFromBcd8(payload: Buffer): string | null {
 /**
  * Build ACK for a given protocol+serial:
  *  0x7878 0x05 <protocol> <serial:2> <crc:2> 0x0D0A
- * CRC computed over: <protocol> + <serial:2>
+ * CRC computed over: <length> + <protocol> + <serial:2>
  */
 export function buildAck(protocol: number, serial: number): Buffer {
   const length = 0x05;
@@ -145,7 +145,7 @@ export function buildAck(protocol: number, serial: number): Buffer {
   body[1] = protocol;
   body.writeUInt16BE(serial & 0xffff, 2);
 
-  const crc = crc16_itu(body.subarray(1)); // protocol+serial
+  const crc = crc16_itu(body); // length+protocol+serial
   const out = Buffer.alloc(2 + body.length + 2 + 2); // start + body + crc + stop
   out[0] = 0x78; out[1] = 0x78;
   body.copy(out, 2);
@@ -213,4 +213,3 @@ export function decodeGt06LocationPayload(payload: Buffer): Gt06PositionDecoded 
 
   return { time, lat, lon, speedKph, course, satellites };
 }
-

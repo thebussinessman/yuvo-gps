@@ -197,15 +197,13 @@ export function decodeGt06LocationPayload(payload: Buffer): Gt06PositionDecoded 
   const course = cs & 0x03ff;
 
   // Common GT06 bit meaning (varies on clones, but this works for most):
-  // bit14: 1 = South, 0 = North
-  // bit13: 1 = West,  0 = East
-  const isSouth = (cs & 0x4000) !== 0;
-  const isWest  = (cs & 0x2000) !== 0;
+  // bit14: 1 = South, 0 = North — NOT reliable on this device, so we ignore it and force the sign below
+  // bit13: 1 = West,  0 = East  — reliable on this device, kept as-is
+  const isWest = (cs & 0x2000) !== 0;
 
-  let lat = latRaw / 1800000;
+  let lat = -Math.abs(latRaw / 1800000); // Zambia is always southern hemisphere — force the sign instead of trusting the South bit
   let lon = lonRaw / 1800000;
-  if (isSouth) lat = -lat;
-  if (isWest)  lon = -lon;
+  if (isWest) lon = -lon;
 
   // Convert YY into a full year (assume 2000–2099 for trackers)
   const year = 2000 + yy;
